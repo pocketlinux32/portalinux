@@ -1,0 +1,11 @@
+printf "Bienvenido a PortaLinux Beta v0.01\n\n"
+printf "Montando sistemas de archivos..."
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mount -t devtmpfs devtmpfs /dev
+printf "Listo\n"
+printf "Creando nodos de dispositivos..."
+busybox mdev -s
+printf "Listo\n"
+printf "Iniciando shell...\n"
+/bin/sh
