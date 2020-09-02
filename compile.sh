@@ -23,7 +23,7 @@ compile(){
 create_initrd(){
 	echo "Creating Initramfs..."
 	if [ ! -f "$PL_PATH/initramfs/init" ]; then
-		for files in bin sbin usr/bin usr/sbin lib etc root opt tmp; do
+		for files in bin sbin usr/bin usr/sbin lib etc root opt tmp dev; do
 			mkdir -p "$PL_PATH/initramfs/$files"
 		done
 	else
@@ -35,8 +35,7 @@ create_initrd(){
 		echo "Necesitas ser root para crear un initramfs. Saliendo..."
 		exit 1
 	else
-		chroot "$PL_PATH/initramfs" "/bin/busybox --install -s"
-		echo "#!/bin/busybox sh" > "$PL_PATH/initramfs/init"
+		printf "#!/bin/busybox sh\n/bin/busybox --install -s\n" > "$PL_PATH/initramfs/init"
 		mknod -m 644 tty c 5 0
 		mknod -m 640 console c 5 1
 Â		mknod -m 664 null c 1 3
@@ -59,5 +58,5 @@ mkdir "$PL_PATH/output"
 cp "$PL_PATH/linux-4.19.83/arch/x86/boot/bzImage" "$PL_PATH/output"
 printf "Done.\n"
 cd "$PL_PATH/linux-4.19.83" && make distclean
-cd "$PL_PATH/busybox-1.31.1" && rm distclean
+cd "$PL_PATH/busybox-1.31.1" && make distclean
 
