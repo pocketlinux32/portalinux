@@ -23,7 +23,7 @@ compile(){
 create_initrd(){
 	echo "Creating Initramfs..."
 	if [ ! -f "$PL_PATH/initramfs/init" ]; then
-		for files in bin sbin usr/bin usr/sbin lib etc root opt tmp dev; do
+		for files in bin sbin usr/bin usr/sbin lib etc root opt tmp dev proc sys; do
 			mkdir -p "$PL_PATH/initramfs/$files"
 		done
 	else
@@ -36,9 +36,9 @@ create_initrd(){
 		exit 1
 	else
 		printf "#!/bin/busybox sh\n/bin/busybox --install -s\n" > "$PL_PATH/initramfs/init"
-		mknod -m 644 tty c 5 0
-		mknod -m 640 console c 5 1
-Â		mknod -m 664 null c 1 3
+		mknod -m 644 "$PL_PATH/initramfs/dev/tty" c 5 0
+		mknod -m 640 "$PL_PATH/initramfs/dev/console" c 5 1
+Â		mknod -m 664 "$PL_PATH/initramfs/dev/null" c 1 3
 	fi
 	cat "$PL_PATH/init" >> "$PL_PATH/initramfs/init"
 	chmod 777 "$PL_PATH/initramfs/init"
