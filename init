@@ -8,4 +8,4 @@ printf "Creando nodos de dispositivos..."
 busybox mdev -s
 printf "Listo\n"
 printf "Iniciando shell...\n"
-/bin/sh
+/bin/linuxrc
