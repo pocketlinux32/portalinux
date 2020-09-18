@@ -8,4 +8,4 @@ Espacio Libre: 10MB
 
 # Metas
 
-- Salir de Beta
+- Salir de Pre-alpha

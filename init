@@ -1,4 +1,4 @@
-printf "Bienvenido a PortaLinux Beta v0.01\n\n"
+printf "Bienvenido a PortaLinux Pre-Alpha v0.01\n\n"
 printf "Montando sistemas de archivos..."
 mount -t proc proc /proc
 mount -t sysfs sysfs /sys
