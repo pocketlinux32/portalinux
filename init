@@ -1,11 +1,28 @@
-printf "Bienvenido a PortaLinux Pre-Alpha v0.01\n\n"
-printf "Montando sistemas de archivos..."
+#!/bin/busybox sh
+/bin/busybox --install -s
+printf "Bienvenido a PortaLinux Beta v0.02\n\n"
+printf "* Montando sistemas de archivos..."
 mount -t proc proc /proc
 mount -t sysfs sysfs /sys
 mount -t devtmpfs devtmpfs /dev
 printf "Listo\n"
-printf "Creando nodos de dispositivos..."
+printf "* Creando nodos de dispositivos..."
 busybox mdev -s
 printf "Listo\n"
-printf "Iniciando shell...\n"
-/bin/sh
+printf "* Reservando RAM (100MB)..."
+mkdir /mnt
+mount -t tmpfs tmpfs -o size=100M /mnt
+printf "Listo.\n"
+printf "* Moviendo todo..."
+mkdir /mnt/proc /mnt/sys /mnt/dev
+for files in init bin sbin usr; do
+	printf "."
+	cp -r /$files /mnt
+done
+for fs in proc sys dev; do
+	printf "."
+	mount --move /$fs /mnt/$fs
+done
+printf "Listo.\n"
+printf "* Iniciando shell...\n"
+exec busybox switch_root /mnt /sbin/init
