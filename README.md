@@ -1,4 +1,4 @@
-# PortaLinux Beta
+# PortaLinux Pre-alpha
 PortaLinux es una distribucion liviana de Linux para darle una vida nueva a PCs lentos o viejos.
 # Requerimientos del Sistema
 Nota: Estos requerimientos son temporarios.<br />
@@ -8,4 +8,4 @@ Espacio Libre: 10MB
 
 # Metas
 
-- Salir de Beta
+- Salir de Pre-alpha
