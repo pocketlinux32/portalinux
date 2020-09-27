@@ -1,6 +1,7 @@
 #!/bin/busybox sh
+busybox dmesg -n 1
 /bin/busybox --install -s
-printf "Bienvenido a PortaLinux Beta v0.02\n\n"
+printf "Bienvenido a PortaLinux Beta v0.03\n\n"
 printf "* Montando sistemas de archivos..."
 mount -t proc proc /proc
 mount -t sysfs sysfs /sys
