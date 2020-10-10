@@ -10,7 +10,7 @@ USER := $$USER
 
 all: prereq $(MAKEPATH)output/initrfs.cpio.xz $(MAKEPATH)output/bzImage
 	echo "* Todo listo. Instalando..."
-	mkdir $(MAKEPATH)output
+	mkdir -p $(MAKEPATH)output
 	cp $(MAKEPATH)linux-4.19.83/arch/x86/boot/bzImage $(MAKEPATH)output
 	mv $(MAKEPATH)initrfs.cpio.xz $(MAKEPATH)output
 
@@ -26,7 +26,7 @@ prereq:
 	fi
 	echo "* Ok. Iniciando compilacion..."
 
-$(MAKEPATH)busybox-1.31.1/busybox: $(CONFIGS)$(fistword $(DIRS))/.config
+$(MAKEPATH)busybox-1.31.1/busybox: $(CONFIGS)/$(firstword $(DIRS))/.config
 	echo "* Compilando busybox-1.31.1..."
 	cp $(MAKEPATH)configs/busybox-1.31.1/.config $(MAKEPATH)busybox-1.31.1
 	$(MAKE) -C $(MAKEPATH)/busybox-1.31.1
@@ -52,7 +52,7 @@ $(MAKEPATH)output/initrfs.cpio.xz: $(MAKEPATH)initramfs/init
 	echo "* Creando initrfs.cpio.xz..."
 	cd $(dir $^) && find . | cpio -o --format=newc | xz --check=crc32 - > $(MAKEPATH)initrfs.cpio.xz
 
-$(MAKEPATH)output/bzImage: $(CONFIG)$(lastword $(DIRS))/.config
+$(MAKEPATH)output/bzImage: $(CONFIGS)/$(lastword $(DIRS))/.config
 	echo "* Compilando linux-4.19.83..."
 	cp $(MAKEPATH)configs/linux-4.19.83/.config $(MAKEPATH)linux-4.19.83
 	$(MAKE) -C $(MAKEPATH)linux-4.19.83 bzImage
