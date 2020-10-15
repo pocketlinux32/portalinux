@@ -1,18 +1,20 @@
 #!/usr/bin/make
 
 MAKEPATH := $(dir $(abspath $(firstword $(MAKEFILE_LIST))))
-CONFIGS := $(MAKEPATH)configs
-DIRS = busybox-1.31.1 linux-4.19.83
-USER := $$USER
+CONFIGDIR := $(MAKEPATH)configs
+BB := $(MAKEPATH)busybox-1.31.1
+LINUX := $(MAKEPATH)linux-4.19.83
+INIT := $(MAKEPATH)init
+MIN_INIT := $(MAKEPATH)minimal-init
+OUTPUT := $(MAKEPATH)/output
+KRNOUT := $(OUTPUT)/bzImage
+INTRDOUT := $(OUTPUT)/initrfs.cpio.xz
 
 .SILENT:
 .PHONY: all clean distclean clean prereq
 
-all: prereq $(MAKEPATH)output/initrfs.cpio.xz $(MAKEPATH)output/bzImage
-	echo "* Todo listo. Instalando..."
-	mkdir -p $(MAKEPATH)output
-	cp $(MAKEPATH)linux-4.19.83/arch/x86/boot/bzImage $(MAKEPATH)output
-	mv $(MAKEPATH)initrfs.cpio.xz $(MAKEPATH)output
+all: prereq $(KRNOUT) $(INTRDOUT)
+	echo "* Todo listo. Sistema instalado en $(MAKEPATH)output."
 
 prereq:
 	echo "Instalador de PortaLinux, Version 0.03"
@@ -24,53 +26,52 @@ prereq:
 			exit 1; \
 		fi; \
 	fi
-	echo "* Ok. Iniciando compilacion..."
+	mkdir -o $(MAKEPATH)output
+	echo "* Ok. Iniciando tarea..."
 
-$(MAKEPATH)busybox-1.31.1/busybox: $(CONFIGS)/$(firstword $(DIRS))/.config
-	echo "* Compilando busybox-1.31.1..."
-	cp $(MAKEPATH)configs/busybox-1.31.1/.config $(MAKEPATH)busybox-1.31.1
-	$(MAKE) -C $(MAKEPATH)/busybox-1.31.1
+$(KRNOUT): $(MAKEPATH)minimal-initrfs $(CONFIGDIR)/.linux-config
+	echo "* Compilando Linux kernel..."
+	cp $(CONFIGDIR)/.linux-config $(LINUX)
+	$(MAKE) -C $(LINUX) 2>/dev/null
+	mv $(LINUX)/arch/x86/boot/bzImage $(OUTPUT)
 
-$(MAKEPATH)initramfs/init: $(MAKEPATH)busybox-1.31.1/busybox $(MAKEPATH)init
-	echo "* Creando initramfs/"
-	for i in bin sbin usr/bin usr/sbin etc dev proc sys; do \
+$(INTRDOUT): $(INIT) $(BB)/busybox
+	echo "* Creando initrfs/"
+	mkdir -p $(MAKEPATH)initrfs
+	for i in bin dev proc sys sbin usr/bin usr/sbin; do \
 		echo "	$$i"; \
-		mkdir -p $(MAKEPATH)initramfs/$$i; \
+		mkdir -p $(MAKEPATH)initrfs/$$i; \
 	done
 	echo "	dev/console"
-	sudo mknod -m 644 $(MAKEPATH)initramfs/dev/console c 5 1
+	sudo mknod -m 644 $(MAKEPATH)initrfs/dev/console c 5 1
 	echo "	dev/tty"
-	sudo mknod -m 644 $(MAKEPATH)initramfs/dev/tty c 5 0
+	sudo mknod -m 644 $(MAKEPATH)initrfs/dev/tty c 5 0
 	echo "	dev/null"
-	sudo mknod -m 664 $(MAKEPATH)initramfs/dev/null c 1 3
-	echo "	bin/busybox"
-	cp $< $(MAKEPATH)initramfs/bin/busybox
+	sudo mknod -m 664 $(MAKEPATH)initrfs/dev/null c 1 3
 	echo "	init"
-	cp $(MAKEPATH)init $(MAKEPATH)initramfs
+	cp $(INIT) $(MAKEPATH)initrfs
+	echo "	bin/busybox"
+	cp $(BB)/busybox $(MAKEPATH)initrfs
+	cd $(MAKEPATH)initrfs
+	find . | cpio -o --format=newc | xz --check=crc32 - > $(INTRDOUT)
 
-$(MAKEPATH)output/initrfs.cpio.xz: $(MAKEPATH)initramfs/init
-	echo "* Creando initrfs.cpio.xz..."
-	cd $(dir $^) && find . | cpio -o --format=newc | xz --check=crc32 - > $(MAKEPATH)initrfs.cpio.xz
-
-$(MAKEPATH)output/bzImage: $(CONFIGS)/$(lastword $(DIRS))/.config
-	echo "* Compilando linux-4.19.83..."
-	cp $(MAKEPATH)configs/linux-4.19.83/.config $(MAKEPATH)linux-4.19.83
-	$(MAKE) -C $(MAKEPATH)linux-4.19.83 bzImage
-
-clean: $(DIRS)
-	echo "* Borrando archivos..."
-	echo "	initramfs/"
-	rm -rf $(MAKEPATH)initramfs
-	for i in $?; do \
-		echo "	$$i/"; \
-		$(MAKE) -C $(MAKEPATH)$$i clean; \
-	done
-	echo "	output/"
-	rm -rf $(MAKEPATH)output
-
-distclean: clean
-	echo "* Borrando configuraciones..."
-	for i in $(DIRS); do \
+$(MAKEPATH)minimal-initrfs: $(MIN_INIT) $(BB)/minimal-busybox
+	echo "* Creando minimal-initrfs/"
+	for i in bin dev proc sys sbin; do \
 		echo "	$$i"; \
-		$(MAKE) -C $(MAKEPATH)$$i distclean; \
-	done
+	fi
+	echo "	init"
+	cp $(MIN_INIT) $(MAKEPATH)minimal-initrfs/init
+	echo "	bin/busybox"
+	cp $(BB)/minimal-busybox $(MAKEPATH)minimal-initrfs/bin/busybox
+
+$(BB)/busybox: $(CONFIGDIR)/.busybox-config
+	echo "* Compilando BusyBox..."
+	cp $< $(BB)
+	$(MAKE) -C $(BB) 2>/dev/null
+
+$(BB)/minimal-busybox: $(CONFIGDIR)/.minimal-busybox-config
+	echo "* Compilando BusyBox (min)..."
+	cp $< $(BB)
+	$(MAKE) -C $(BB) 2>/dev/null
+	$(MAKE) -C $(BB) clean
