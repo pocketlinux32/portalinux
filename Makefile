@@ -26,14 +26,20 @@ prereq:
 			exit 1; \
 		fi; \
 	fi
-	mkdir -o $(MAKEPATH)output
+	mkdir -p $(MAKEPATH)output
 	echo "* Ok. Iniciando tarea..."
 
-$(KRNOUT): $(MAKEPATH)minimal-initrfs $(CONFIGDIR)/.linux-config
+$(KRNOUT): $(MAKEPATH)linux-4.19.83 $(MAKEPATH)minimal-initrfs $(CONFIGDIR)/.linux-config
 	echo "* Compilando Linux kernel..."
-	cp $(CONFIGDIR)/.linux-config $(LINUX)
+	cp $(CONFIGDIR)/.linux-config $(LINUX)/.config
 	$(MAKE) -C $(LINUX) 2>/dev/null
 	mv $(LINUX)/arch/x86/boot/bzImage $(OUTPUT)
+
+$(MAKEPATH)linux-4.19.83:
+	echo "* Descargando Kernel Linux..."
+	wget "https://kernel.org/pub/linux/kernel/v4.x/linux-4.19.83.tar.gz" -O "linux-4.19.83.tar.gz"; \
+	gzip -d linux-4.19.83.tar.gz
+	tar -xf linux-4.19.83.tar
 
 $(INTRDOUT): $(INIT) $(BB)/busybox
 	echo "* Creando initrfs/"
@@ -59,7 +65,10 @@ $(MAKEPATH)minimal-initrfs: $(MIN_INIT) $(BB)/minimal-busybox
 	echo "* Creando minimal-initrfs/"
 	for i in bin dev proc sys sbin; do \
 		echo "	$$i"; \
-	fi
+		mkdir -p $(MAKEPATH)minimal-initrfs/$$i; \
+	done
+	echo "	dev/console"
+	sudo mknod -m 644 $(MAKEPATH)initrfs/dev/console c 5 1
 	echo "	init"
 	cp $(MIN_INIT) $(MAKEPATH)minimal-initrfs/init
 	echo "	bin/busybox"
@@ -68,10 +77,23 @@ $(MAKEPATH)minimal-initrfs: $(MIN_INIT) $(BB)/minimal-busybox
 $(BB)/busybox: $(CONFIGDIR)/.busybox-config
 	echo "* Compilando BusyBox..."
 	cp $< $(BB)
+	mv $(BB)/.busybox-config $(BB)/.config
 	$(MAKE) -C $(BB) 2>/dev/null
 
 $(BB)/minimal-busybox: $(CONFIGDIR)/.minimal-busybox-config
 	echo "* Compilando BusyBox (min)..."
 	cp $< $(BB)
-	$(MAKE) -C $(BB) 2>/dev/null
+	mv $(BB)/.minimal-busybox-config $(BB)/.config
+	$(MAKE) -C $(BB)
+	mv $(BB)/busybox $(BB)/minimal-busybox
 	$(MAKE) -C $(BB) clean
+
+distclean:
+	$(MAKE) -C $(BB) distclean
+	rm -rf $(LINUX)
+	rm -rf $(MAKEPATH)minimal-initrfs
+	rm -rf $(MAKEPATH)initrfs
+
+clean:
+	$(MAKE) -C $(BB) clean
+	$(MAKE) -C $(LINUX) clean
