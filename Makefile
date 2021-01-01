@@ -2,11 +2,12 @@
 
 MAKEPATH := $(dir $(abspath $(firstword $(MAKEFILE_LIST))))
 CONFIGDIR := $(MAKEPATH)configs
-BB := $(MAKEPATH)busybox-1.31.1
-LINUX := $(MAKEPATH)linux-4.19.83
+SRC := $(MAKEPATH)src
+OUTPUT := $(MAKEPATH)output
+BB := $(SRC)/busybox-1.31.1
+LINUX := $(SRC)/linux-4.19.83
 INIT := $(MAKEPATH)init
 MIN_INIT := $(MAKEPATH)minimal-init
-OUTPUT := $(MAKEPATH)/output
 KRNOUT := $(OUTPUT)/bzImage
 INTRDOUT := $(OUTPUT)/initrfs.cpio.xz
 
@@ -37,9 +38,12 @@ $(KRNOUT): $(MAKEPATH)linux-4.19.83 $(MAKEPATH)minimal-initrfs $(CONFIGDIR)/.lin
 
 $(MAKEPATH)linux-4.19.83:
 	echo "* Descargando Kernel Linux..."
+	cd $(SRC)
 	wget "https://kernel.org/pub/linux/kernel/v4.x/linux-4.19.83.tar.gz" -O "linux-4.19.83.tar.gz"; \
 	gzip -d linux-4.19.83.tar.gz
 	tar -xf linux-4.19.83.tar
+	rm *.tar
+	cd $(MAKEPATH)
 
 $(INTRDOUT): $(INIT) $(BB)/busybox
 	echo "* Creando initrfs/"
