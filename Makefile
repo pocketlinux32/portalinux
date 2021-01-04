@@ -19,7 +19,7 @@ all: prereq $(KRNOUT) $(INTRDOUT)
 
 prereq:
 	echo "Instalador de PortaLinux, Version 0.03"
-	echo "(gpl)2020 PocketNES Software, Debajo GPLv3"
+	echo "2020 PocketNES Software, Debajo GPLv3"
 	if [ $$(id -u) -ne 0 ]; then \
 		echo "* Se necesita elevar privilegios para crear algunos archivos *"; \
 		sudo ls; \
@@ -27,21 +27,31 @@ prereq:
 			exit 1; \
 		fi; \
 	fi
-	mkdir -p $(MAKEPATH)output
+	cd $(MAKEPATH)
+	mkdir -p $(OUTPUT) $(SRC)
 	echo "* Ok. Iniciando tarea..."
 
 $(KRNOUT): $(MAKEPATH)linux-4.19.83 $(MAKEPATH)minimal-initrfs $(CONFIGDIR)/.linux-config
 	echo "* Compilando Linux kernel..."
 	cp $(CONFIGDIR)/.linux-config $(LINUX)/.config
 	$(MAKE) -C $(LINUX) 2>/dev/null
-	mv $(LINUX)/arch/x86/boot/bzImage $(OUTPUT)
+	mv $(LINUX)/arch/x86/boot/bzImage $(KRNOUT)
 
-$(MAKEPATH)linux-4.19.83:
+$(LINUX):
 	echo "* Descargando Kernel Linux..."
 	cd $(SRC)
 	wget "https://kernel.org/pub/linux/kernel/v4.x/linux-4.19.83.tar.gz" -O "linux-4.19.83.tar.gz"; \
 	gzip -d linux-4.19.83.tar.gz
 	tar -xf linux-4.19.83.tar
+	rm *.tar
+	cd $(MAKEPATH)
+
+$(BB):
+	echo "* Descargando BusyBox..."
+	cd $(SRC)
+	wget "https://busybox.net/downloads/busybox-1.33.0.tar.bz2" -O "busybox-1.33.0.tar.bz2"
+	bunzip2 busybox-1.33.0.tar.bz2
+	tar -xf busybox-1.33.0.tar
 	rm *.tar
 	cd $(MAKEPATH)
 
@@ -78,13 +88,13 @@ $(MAKEPATH)minimal-initrfs: $(MIN_INIT) $(BB)/minimal-busybox
 	echo "	bin/busybox"
 	cp $(BB)/minimal-busybox $(MAKEPATH)minimal-initrfs/bin/busybox
 
-$(BB)/busybox: $(CONFIGDIR)/.busybox-config
+$(BB)/busybox: $(CONFIGDIR)/.busybox-config $(BB)
 	echo "* Compilando BusyBox..."
 	cp $< $(BB)
 	mv $(BB)/.busybox-config $(BB)/.config
 	$(MAKE) -C $(BB) 2>/dev/null
 
-$(BB)/minimal-busybox: $(CONFIGDIR)/.minimal-busybox-config
+$(BB)/minimal-busybox: $(CONFIGDIR)/.minimal-busybox-config $(BB)
 	echo "* Compilando BusyBox (min)..."
 	cp $< $(BB)
 	mv $(BB)/.minimal-busybox-config $(BB)/.config
@@ -95,6 +105,7 @@ $(BB)/minimal-busybox: $(CONFIGDIR)/.minimal-busybox-config
 distclean:
 	$(MAKE) -C $(BB) distclean
 	rm -rf $(LINUX)
+	rm -rf $(BB)
 	rm -rf $(MAKEPATH)minimal-initrfs
 	rm -rf $(MAKEPATH)initrfs
 
