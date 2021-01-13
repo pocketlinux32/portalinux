@@ -5,4 +5,5 @@ mount -t proc proc /proc
 mount -t sysfs sysfs /sys
 mount -t devtmpfs devtmpfs /dev
 busybox mdev -s
+echo "It seems that initramfs is missing! Dropping to a shell..."
 exec /linuxrc

@@ -1,29 +1,76 @@
 #!/bin/busybox sh
 busybox dmesg -n 1
-/bin/busybox --install -s
-printf "Bienvenido a PortaLinux Beta v0.03\n\n"
-printf "* Montando sistemas de archivos..."
-mount -t proc proc /proc
-mount -t sysfs sysfs /sys
-mount -t devtmpfs devtmpfs /dev
-printf "Listo\n"
-printf "* Creando nodos de dispositivos..."
-busybox mdev -s
-printf "Listo\n"
-printf "* Reservando RAM (100MB)..."
-mkdir /mnt
-mount -t tmpfs tmpfs -o size=100M /mnt
-printf "Listo.\n"
-printf "* Moviendo todo..."
-mkdir /mnt/proc /mnt/sys /mnt/dev
-for files in init bin sbin usr; do
-	printf "."
-	cp -r /$files /mnt
-done
-for fs in proc sys dev; do
-	printf "."
-	mount --move /$fs /mnt/$fs
-done
-printf "Listo.\n"
-printf "* Iniciando shell...\n"
-exec busybox switch_root /mnt /sbin/init
+device=""
+found=0
+if [ -f "/tmpfs" ]; then
+	printf "Listo.\n"
+	for i in $(seq 30); do
+		for device in $(blkid | sort | cut -d: -f 1 | grep -E -v "/loop|/ram|/zram"); do
+			printf "Buscando rootfs.sb en $device..."
+			mount $device /mnt
+			if [ -f /mnt/rootfs.sb ]; then
+				printf "Encontrado.\n"
+				found=1
+				break
+			else
+				printf "No encontrado."
+				umount /mnt
+			fi
+		done
+		if [ $found -eq 1 ]; then
+			break
+		fi
+		sleep 1
+	done
+	if [ $found -eq 0 ]; then
+		echo "Error: No se encontro rootfs.sb"
+		echo "Iniciando shell..."
+		exec busybox linuxrc
+	fi
+	mkdir -p /overlayfs/workdir /overlayfs/bundles /overlayfs/rootfs
+	bundles=$(find -print -depth /mnt | grep "*.sb")
+	for bundle in $bundles; do
+		printf "Montando $bundle..."
+		mkdir /overlayfs/bundles/$(basename $bundle)
+		mount $bundle /overlayfs/bundles/$(basename $bundle)
+		printf "Listo\n"
+	done
+	mkdir /changes
+	overlay_bundles=$(echo $bundles | sed 's/ /:/g')
+	mount -t overlay rootfs -o lowerdir=$overlay_bundles,upperdir=/changes,workdir=/overlayfs/workdir /overlayfs/rootfs
+	for fs in proc sys dev; do
+                printf "."
+                mount --move /$fs /overlayfs/rootfs/$fs
+        done
+	pivot_root /overlayfs/rootfs /opt/initramfs 
+	exec chroot / /sbin/init
+else
+	/bin/busybox --install -s
+	printf "Bienvenido a PortaLinux Beta v0.10\n\n"
+	printf "* Montando sistemas de archivos..."
+	mount -t proc proc /proc
+	mount -t sysfs sysfs /sys
+	mount -t devtmpfs devtmpfs /dev
+	printf "Listo\n"
+	printf "* Creando nodos de dispositivos..."
+	busybox mdev -s
+	printf "Listo\n"
+	printf "* Reservando RAM (100MB)..."
+	mkdir /mnt
+	mount -t tmpfs tmpfs -o size=100M /mnt
+	printf "Listo.\n"
+	printf "* Moviendo todo..."
+	mkdir /mnt/proc /mnt/sys /mnt/dev
+	for files in init bin sbin usr; do
+		printf "."
+		cp -r /$files /mnt
+	done
+	for fs in proc sys dev; do
+		printf "."
+		mount --move /$fs /mnt/$fs
+	done
+	printf "Listo.\n"
+	printf "* Cambiando rootfs..."
+	echo "switched to tmpfs" > /mnt/tmpfs
+	exec busybox switch_root /mnt /init
+fi

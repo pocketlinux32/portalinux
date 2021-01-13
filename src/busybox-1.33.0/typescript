@@ -1,0 +1,11 @@
+Script started on Mon 11 Jan 2021 06:23:54 AM UTC
+root@slax:~/Projects/portalinux/src/busybox-1.33.0# exit --help
+exit: exit [n]
+    Exit the shell.
+    
+    Exits the shell with a status of N.  If N is omitted, the exit status
+    is that of the last command executed.
+root@slax:~/Projects/portalinux/src/busybox-1.33.0# exit
+exit
+
+Script done on Mon 11 Jan 2021 06:24:07 AM UTC
