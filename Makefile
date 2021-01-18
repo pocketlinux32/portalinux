@@ -27,3 +27,9 @@ $(MPATH)output/initramfs.cpio.xz: $(MPATH)components/bb
 $(MPATH)output/rootfs.sb: $(MPATH)components/bb
 	make=$(MAKE) mpath=$(MPATH) $(MPATH)components/make-routines compile-pkgs $(PKGS); \
 	make=$(MAKE) mpath=$(MPATH) $(MPATH)components/make-routines create-rootfs $(PKGS)
+
+clean:
+	rm -rf $(MPATH)src/linux* $(MPATH)output $(MPATH)minimal-initrfs $(MPATH)rootfs.sb $(MPATH)mk-init $(MPATH)components/*bb
+	for i in $(PKGS); do \
+		rm -rf $(MPATH)src/$$i/build; \
+	done
