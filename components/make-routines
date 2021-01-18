@@ -16,7 +16,7 @@ compile_linux(){
 	if [ ! -d src/linux-4.19.83 ]; then
 		cd src
 		wget "https://kernel.org/pub/linux/kernel/v4.x/linux-4.19.83.tar.gz" -O "linux-4.19.83.tar.gz"
-		gzip -d src/linux-4.19.83.tar.gz
+		gzip -d linux-4.19.83.tar.gz
 		tar -xf linux-4.19.83.tar
 		rm linux-4.19.83
 		cd ..
