@@ -52,7 +52,7 @@ create_ar(){
 }
 
 echo "mkinitrd, Version 0.10"
-echo -e "(c) 2020 PocketNES Software, debajo GPLv3\n"
+printf "(c) 2020 PocketNES Software, debajo GPLv3\n\n"
 
 if [ $(id -u) -ne 0 ]; then
 	echo "Error: No eres root. Tienes que ser root para utilizar esta herramienta"

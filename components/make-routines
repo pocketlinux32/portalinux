@@ -64,7 +64,7 @@ create_rootfs(){
 
 cd $mpath
 
-case $3 in
+case $1 in
 	"compile-bb")
 		compile_bb
 		;;
