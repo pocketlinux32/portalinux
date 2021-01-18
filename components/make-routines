@@ -62,8 +62,6 @@ create_rootfs(){
 	chroot rootfs.sb /bin/busybox --install -s
 }
 
-make=$1
-mpath=$2
 cd $mpath
 
 case $3 in
