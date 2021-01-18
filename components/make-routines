@@ -1,0 +1,86 @@
+#!/bin/sh
+
+compile_bb(){
+	cp configs/.busybox-config src/busybox-1.33.0/.config
+	$make -C src/busybox-1.33.0
+	mv src/busybox-1.33.0/busybox components/bb
+	cp configs/.static-busybox-config src/busybox-1.33.0/.config
+	$make -C src/busybox-1.33.0
+	mv src/busybox-1.33.0/busybox components/static-bb
+	cp configs/.minimal-busybox-config src/busybox-1.33.0/.config
+	$make -C src/busybox-1.33.0
+	mv src/busybox-1.33.0/busybox components/minimal-bb
+}
+
+compile_linux(){
+	if [ ! -d src/linux-4.19.83 ]; then
+		cd src
+		wget "https://kernel.org/pub/linux/kernel/v4.x/linux-4.19.83.tar.gz" -O "linux-4.19.83.tar.gz"
+		gzip -d src/linux-4.19.83.tar.gz
+		tar -xf linux-4.19.83.tar
+		rm linux-4.19.83
+		cd ..
+	fi
+	cp configs/.linux-config src/linux-4.19.83/.config
+	$make -C src/linux-4.19.83
+	mv src/linux-4.19.83/arch/x86/boot/bzImage output
+}
+
+compile_pkgs(){
+	libflags="--host=i686-pocket-linux-gnu --prefix=/usr"
+	for i in $@; do
+		mkdir src/$i/build
+	done
+	cd src/glibc-2.32/build
+	../configure $libflags --disable-multilib --with-sysroot=/
+	$make
+	cd ../../ncurses-6.2/build
+	../configure $libflags --enable-widec
+	$make
+	cd ../../nano-5.4/build
+	../configure $libflags
+	$make
+}
+
+create_minimal_initrfs(){
+	for i in bin dev proc sys sbin; do
+		mkdir -p minimal-initrfs/$i
+	done
+	mknod -m 644 minimal-initrfs/dev/console c 5 1
+	cp components/minimal-init minimal-initrfs/init
+	cp components/minimal-bb minimal-initrfs/bin/busybox
+}
+
+create_rootfs(){
+	for i in bin dev proc sys mnt root home opt/initramfs usr/bin usr/sbin usr/lib sbin; do
+		mkdir -p rootfs.sb/$i
+	done
+	for pkgs in $@; do
+		$make -C src/$pkgs/build install DESTDIR=$mpath/rootfs.sb
+	done
+	cp components/bb rootfs.sb/bin/busybox
+	chroot rootfs.sb /bin/busybox --install -s
+}
+
+make=$1
+mpath=$2
+cd $mpath
+
+case $3 in
+	"compile-bb")
+		compile_bb
+		;;
+	"compile-linux")
+		compile_linux
+		;;
+	"compile-pkgs")
+		shift 3
+		compile_pkgs $@
+		;;
+	"create-minimal-initrfs")
+		create_minimal_initrfs
+		;;
+	"create-rootfs")
+		shift 3
+		create_rootfs $@
+esac
