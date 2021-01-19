@@ -22,7 +22,7 @@ $(MPATH)output/bzImage: $(MPATH)minimal-initrfs
 
 $(MPATH)output/initramfs.cpio.xz: $(MPATH)components/bb
 	cd $(MPATH)output; \
-	sudo $(MPATH)components/mkinitrd --busybox $(MPATH)components/bb --init $(MPATH)components/init --compression xz
+	sudo $(MPATH)components/mkinitrd --busybox $(MPATH)components/minimal-bb --init $(MPATH)components/init --compression xz
 
 $(MPATH)output/rootfs.sb: $(MPATH)components/bb
 	make=$(MAKE) mpath=$(MPATH) $(MPATH)components/make-routines compile-pkgs $(PKGS); \
@@ -33,3 +33,5 @@ clean:
 	for i in $(PKGS); do \
 		rm -rf $(MPATH)src/$$i/build; \
 	done
+	make -C $(MPATH)src/busybox-1.33.0 distclean
+

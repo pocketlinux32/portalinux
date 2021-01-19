@@ -18,7 +18,7 @@ compile_linux(){
 		wget "https://kernel.org/pub/linux/kernel/v4.x/linux-4.19.83.tar.gz" -O "linux-4.19.83.tar.gz"
 		gzip -d linux-4.19.83.tar.gz
 		tar -xf linux-4.19.83.tar
-		rm linux-4.19.83
+		rm linux-4.19.83.tar
 		cd ..
 	fi
 	cp configs/.linux-config src/linux-4.19.83/.config
@@ -29,16 +29,16 @@ compile_linux(){
 compile_pkgs(){
 	libflags="--host=i686-pocket-linux-gnu --prefix=/usr"
 	for i in $@; do
-		mkdir src/$i/build
+		mkdir src/$i/build -p
 	done
 	cd src/glibc-2.32/build
 	../configure $libflags --disable-multilib --with-sysroot=/
 	$make
 	cd ../../ncurses-6.2/build
-	../configure $libflags --enable-widec
+	../configure $libflags --enable-widec --with-termlib --with-shared --with-ticlib
 	$make
 	cd ../../nano-5.4/build
-	../configure $libflags
+	../configure $libflags --enable-utf8
 	$make
 }
 
@@ -59,7 +59,7 @@ create_rootfs(){
 		$make -C src/$pkgs/build install DESTDIR=$mpath/rootfs.sb
 	done
 	cp components/bb rootfs.sb/bin/busybox
-	chroot rootfs.sb /bin/busybox --install -s
+	sudo chroot rootfs.sb /bin/busybox --install -s
 }
 
 cd $mpath
@@ -72,13 +72,13 @@ case $1 in
 		compile_linux
 		;;
 	"compile-pkgs")
-		shift 3
+		shift
 		compile_pkgs $@
 		;;
 	"create-minimal-initrfs")
 		create_minimal_initrfs
 		;;
 	"create-rootfs")
-		shift 3
+		shift
 		create_rootfs $@
 esac
